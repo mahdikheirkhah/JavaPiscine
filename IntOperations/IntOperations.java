@@ -1,38 +1,33 @@
 public class IntOperations {
     public static int addTwoIntegers(int a, int b) {
-        int result = a + b;
-        if (result > Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        } else if (result < Integer.MIN_VALUE) {
-            return Integer.MIN_VALUE;
-        }
-        return result;
+        long result = (long) a + b;
+        if (result > Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        if (result < Integer.MIN_VALUE) return Integer.MIN_VALUE;
+        return (int) result;
     }
+
     public static int subtractTwoIntegers(int a, int b) {
-        int result = a - b;
-        if (result > Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        } else if (result < Integer.MIN_VALUE) {
-            return Integer.MIN_VALUE;
-        }
-        return result;
+        long result = (long) a - b;
+        if (result > Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        if (result < Integer.MIN_VALUE) return Integer.MIN_VALUE;
+        return (int) result;
     }
+
     public static int multiplyTwoIntegers(int a, int b) {
-        int result = a * b;
-        if (result > Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        } else if (result < Integer.MIN_VALUE) {
-            return Integer.MIN_VALUE;
-        }
-        return result;
+        long result = (long) a * b;
+        if (result > Integer.MAX_VALUE) return Integer.MAX_VALUE;
+        if (result < Integer.MIN_VALUE) return Integer.MIN_VALUE;
+        return (int) result;
     }
+
     public static int divideTwoIntegers(int a, int b) {
-        int result = (int) a / b;
-        if (result > Integer.MAX_VALUE) {
-            return Integer.MAX_VALUE;
-        } else if (result < Integer.MIN_VALUE) {
-            return Integer.MIN_VALUE;
+        if (b == 0) {
+            throw new ArithmeticException("Division by zero");
         }
-        return result;
+        // Special case: overflow from Integer.MIN_VALUE / -1
+        if (a == Integer.MIN_VALUE && b == -1) {
+            return Integer.MAX_VALUE;
+        }
+        return a / b;
     }
 }
