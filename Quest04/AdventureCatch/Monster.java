@@ -11,7 +11,8 @@ public class Monster extends Character {
         return String.format("%s is a monster with %d HP. He has the weapon %s",this.getName(), this.getCurrentHealth(), this.getWeapon().toString());
     }
 
-    public void takeDamage(int amount){
+    public void takeDamage(int amount) throws DeadCharacterException{
+        if(this.getCurrentHealth() <= 0) throw new DeadCharacterException(this);
         int newHealth = this.getCurrentHealth() - ((int)(amount * 0.8));
         if(newHealth < 0) {
             this.setCurrentHealth(0);
@@ -20,13 +21,19 @@ public class Monster extends Character {
         }
     }
 
-    public void attack(Character ch){
+    public void attack(Character ch) throws DeadCharacterException{
         if(ch == null) return;
+        if(this.getCurrentHealth() == 0) throw new DeadCharacterException(this);
         Weapon weapon = this.getWeapon();
-        if (weapon == null || weapon.getDamage() <= 0){
+        try {
+            if (weapon == null || weapon.getDamage() <= 0){
             ch.takeDamage(7);
-        } else {
+            } else {
             ch.takeDamage(weapon.getDamage());
+            }
+        } catch (DeadCharacterException e) {
+            throw e;
         }
+
     }
 }

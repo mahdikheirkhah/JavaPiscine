@@ -5,6 +5,10 @@ public class DeadCharacterException extends Exception {
         this.character = character;
     }
 
+    public Character getCharacter(){
+        return character;
+    }
+
     @Override
     public String getMessage(){
         String result;

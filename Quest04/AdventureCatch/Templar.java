@@ -13,8 +13,9 @@ public class Templar extends Character implements Healer, Tank {
         return healCapacity;
     }
     @Override
-    public void heal(Character ch) {
+    public void heal(Character ch) throws DeadCharacterException {
         int currentHealth = ch.getCurrentHealth();
+        if (currentHealth == 0) throw new DeadCharacterException(ch);
         if (currentHealth + this.getHealCapacity() >= ch.getMaxHealth()){
             ch.setCurrentHealth(ch.getMaxHealth());
         } else {
@@ -35,7 +36,8 @@ public class Templar extends Character implements Healer, Tank {
         }
         return String.format("%s is a strong Templar with %d HP. It can heal %d HP and has a shield of %d. He has the weapon %s", this.getName(),this.getCurrentHealth(), this.getHealCapacity(), this.getShield(), this.getWeapon().toString());
     }
-    public void takeDamage(int amount){
+    public void takeDamage(int amount) throws DeadCharacterException{
+        if(this.getCurrentHealth() <= 0) throw new DeadCharacterException(this);
         int newHealth = this.getCurrentHealth() - amount + this.getShield();
         if(newHealth < 0) {
             this.setCurrentHealth(0);
@@ -44,15 +46,20 @@ public class Templar extends Character implements Healer, Tank {
         }
     }
 
-    public void attack(Character ch){
+    public void attack(Character ch) throws DeadCharacterException{
         if(ch == null) return;
-        this.heal(this);
-        Weapon weapon = this.getWeapon();
-        if (weapon == null || weapon.getDamage() == 0){
-            ch.takeDamage(6);
-        } else {
-            ch.takeDamage(weapon.getDamage());
-        }
+        if(this.getCurrentHealth() <= 0) throw new DeadCharacterException(this);
+        try {    
+            this.heal(this);
+            Weapon weapon = this.getWeapon();
+            if (weapon == null || weapon.getDamage() == 0){
+                ch.takeDamage(6);
+            } else {
+                ch.takeDamage(weapon.getDamage());
+            }
+        } catch (DeadCharacterException e){
+            throw e;
+        }    
 
     }
 }

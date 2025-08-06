@@ -47,7 +47,7 @@ public class Templar extends Character implements Healer, Tank {
     public void attack(Character ch){
         if(ch == null) return;
         this.heal(this);
-        Weapon weapon = ch.getWeapon();
+        Weapon weapon = this.getWeapon();
         if (weapon == null || weapon.getDamage() == 0){
             ch.takeDamage(6);
         } else {

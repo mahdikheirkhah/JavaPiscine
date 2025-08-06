@@ -22,7 +22,7 @@ public class Monster extends Character {
 
     public void attack(Character ch){
         if(ch == null) return;
-        Weapon weapon = ch.getWeapon();
+        Weapon weapon = this.getWeapon();
         if (weapon == null || weapon.getDamage() <= 0){
             ch.takeDamage(7);
         } else {
