@@ -1,53 +1,15 @@
-## AdventureMonster
+## AdventureInterface
 
 ### Instructions
 
-Create a new class `Monster` in a new file `Monster.java`.
+We will now use a new principle : interfaces.
 
-This class inherits from `Character`.
+Let's create an interface `Tank` in a file `Tank.java`.
+It has one method : `getShield` that returns an integer.
 
-It has one constructor, with the same parameters as `Character` (`name` and `maxHealth`).
-
-You need to override `toString` method, use the following format : 
-* if the monster is still alive : `<name> is a monster with <currentHealth> HP`.
-* Otherwise : `<name> is a monster and is dead`.
-
-### Usage
-
-Here is a possible ExerciseRunner.java to test your function :
-
-```java
-public class ExerciseRunner {
-
-    public static void main(String[] args) {
-        Character aragorn = new Character("Aragorn", 20);
-        Monster slime = new Monster("Slime", 15);
-
-        System.out.println(Character.printStatus());
-
-        Character winner = Character.fight(aragorn, slime);
-
-        System.out.println(Character.printStatus());
-    }
-}
-```
-
-and its output :
-```shell
-$ javac *.java -d build
-$ java -cp build ExerciseRunner 
-------------------------------------------
-Characters currently fighting : 
- - Aragorn : 20/20
- - Slime is a monster with 15 HP
-------------------------------------------
-------------------------------------------
-Characters currently fighting : 
- - Aragorn : 11/20
- - Slime is a monster and is dead
-------------------------------------------
-$ 
-```
+Create another interface `Healer` in a file `Healer.java`. It has two methods : 
+* `heal` which takes a `Character` as parameter and returns nothing.
+* `getHealCapacity` which returns an integer.
 
 ### Notions
-[Inheritance](https://docs.oracle.com/javase/tutorial/java/IandI/subclasses.html)  
+[Interface](https://docs.oracle.com/javase/tutorial/java/IandI/createinterface.html)  
