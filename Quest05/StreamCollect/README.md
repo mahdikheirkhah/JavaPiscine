@@ -13,7 +13,6 @@ Create a function `orderAndConcatWithSharp` which joins the alphabetically sorte
 ```java
 public class StreamCollect {
     public static Map<Character, List<String>> mapByFirstLetter(Stream<String> s) {
-        // your code here
     }
 
     public static Map<Integer, Optional<Integer>> getMaxByModulo4(Stream<Integer> s) {
