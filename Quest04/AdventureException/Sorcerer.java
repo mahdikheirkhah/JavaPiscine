@@ -1,3 +1,4 @@
+package Quest04.AdventureException;
 public class Sorcerer extends Character implements Healer {
     private final int healCapacity;
 
