@@ -9,7 +9,8 @@ public class TrafficController {
     private long lastUpdate;
     private final int UPDATE_INTERVAL = 1000; // 1 second
     private final double CONGESTION_THRESHOLD = 0.7; // 70% capacity
-    
+    private String currentGreenDirection; // Track current green direction
+
     public TrafficController(Roads roads) {
         this.roads = roads;
         this.trafficLights = new HashMap<>();
@@ -17,6 +18,7 @@ public class TrafficController {
         
         initializeTrafficLights();
         initializePriorityQueue();
+        currentGreenDirection = "east"; // Start with east as green
     }
     
     private void initializeTrafficLights() {
@@ -25,23 +27,30 @@ public class TrafficController {
         trafficLights.put("east", new TrafficLights("east"));
         trafficLights.put("west", new TrafficLights("west"));
         
-        // Start with east-west green, north-south red
+        // Start with only east green
         trafficLights.get("east").setCurrentState(TrafficLights.LightState.GREEN);
-        trafficLights.get("west").setCurrentState(TrafficLights.LightState.GREEN);
+        trafficLights.get("north").setCurrentState(TrafficLights.LightState.RED);
+        trafficLights.get("south").setCurrentState(TrafficLights.LightState.RED);
+        trafficLights.get("west").setCurrentState(TrafficLights.LightState.RED);
     }
     
     private void initializePriorityQueue() {
-        // Priority queue that prioritizes lanes with higher congestion
         lanePriorityQueue = new PriorityQueue<>(
             (a, b) -> Double.compare(b.congestionLevel, a.congestionLevel)
         );
     }
     
-    public void update() {
+    public void update(List<Vehicle> allVehicles) {
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastUpdate >= UPDATE_INTERVAL) {
-            updatePriorityQueue();
-            manageLights();
+            // Check if any vehicle is in intersection
+            boolean intersectionOccupied = allVehicles.stream()
+                .anyMatch(Vehicle::isInIntersection);
+                
+            if (!intersectionOccupied) {
+                updatePriorityQueue();
+                manageLights();
+            }
             lastUpdate = currentTime;
         }
     }
@@ -58,88 +67,113 @@ public class TrafficController {
         }
     }
     
-    private void manageLights() {
-        // Get the most congested lane
-        LanePriority mostCongested = lanePriorityQueue.peek();
-        
-        if (mostCongested != null && mostCongested.congestionLevel > CONGESTION_THRESHOLD) {
-            handleCongestion(mostCongested.direction);
-        } else {
-            // Normal cycling
-            normalLightCycle();
+    // ADD THIS NEW METHOD IN ITS PLACE:
+private void manageLights() {
+    // Priority 1: Handle high congestion
+    LanePriority mostCongested = lanePriorityQueue.peek();
+    if (mostCongested != null && mostCongested.congestionLevel > CONGESTION_THRESHOLD) {
+        handleCongestion(mostCongested.direction);
+        return; 
+    }
+
+    // Priority 2: Handle unnecessary waiting
+    boolean isGreenLaneEmpty = roads.getLane(currentGreenDirection).getCurrentLoad() == 0;
+
+    // Find a lane that has cars waiting at a red light
+    java.util.Optional<LanePriority> waitingLane = lanePriorityQueue.stream()
+            .filter(lp -> lp.vehicleCount > 0 && !lp.direction.equals(currentGreenDirection))
+            .findFirst();
+
+    // If the current green light is unused AND another lane has cars waiting...
+    if (isGreenLaneEmpty && waitingLane.isPresent()) {
+        // Switch to the waiting lane immediately, out of order.
+        switchToDirection(waitingLane.get().direction);
+    } else {
+        // Otherwise, fall back to the timed cycle if the timer has expired.
+        TrafficLights currentLight = trafficLights.get(currentGreenDirection);
+        if (currentLight.shouldSwitch()) {
+            findAndSwitchToNextOccupiedLane();
         }
     }
+}
+// ADD THIS HELPER METHOD:
+private void findAndSwitchToNextOccupiedLane() {
+    String[] sequence = {"north", "east", "south", "west"};
+    int currentIndex = -1;
+    for (int i = 0; i < sequence.length; i++) {
+        if (sequence[i].equals(currentGreenDirection)) {
+            currentIndex = i;
+            break;
+        }
+    }
+
+    // Starting from the current direction, check the next lanes in the sequence
+    for (int i = 1; i <= sequence.length; i++) {
+        String nextDirection = sequence[(currentIndex + i) % sequence.length];
+        if (roads.getLane(nextDirection).getCurrentLoad() > 0) {
+            switchToDirection(nextDirection);
+            return; // Switched successfully
+        }
+    }
+
+    // If no cars are waiting anywhere, the light will just remain green on the current lane
+    // until a car appears elsewhere and the logic runs again.
+}
     
     private void handleCongestion(String congestedDirection) {
-        TrafficLights congestedLight = trafficLights.get(congestedDirection);
-        
-        // If the congested lane's light is red, prioritize switching it to green
-        if (congestedLight.getCurrentState() == TrafficLights.LightState.RED) {
-            switchLightGroup(congestedDirection);
-            // Extend green time for congested lane
-            congestedLight.extendGreenTime(2000); // Add 2 seconds
-        } else if (congestedLight.getCurrentState() == TrafficLights.LightState.GREEN) {
-            // Extend current green time
-            congestedLight.extendGreenTime(1000); // Add 1 second
-        }
-    }
-    
-    private void normalLightCycle() {
-        // Check if any lights should switch based on their timers
-        for (TrafficLights light : trafficLights.values()) {
-            if (light.shouldSwitch()) {
-                // Switch the entire group (north-south or east-west)
-                if (light.getPosition().equals("north") || light.getPosition().equals("south")) {
-                    switchLightGroup("north"); // This will handle both north and south
-                } else {
-                    switchLightGroup("east"); // This will handle both east and west
-                }
-                break; // Only switch one group at a time
-            }
-        }
-    }
-    
-    private void switchLightGroup(String direction) {
-        if (direction.equals("north") || direction.equals("south")) {
-            // Switch north-south group
-            TrafficLights northLight = trafficLights.get("north");
-            TrafficLights southLight = trafficLights.get("south");
-            TrafficLights eastLight = trafficLights.get("east");
-            TrafficLights westLight = trafficLights.get("west");
-            
-            if (northLight.getCurrentState() == TrafficLights.LightState.RED) {
-                // Switch to green for north-south, red for east-west
-                northLight.setCurrentState(TrafficLights.LightState.GREEN);
-                southLight.setCurrentState(TrafficLights.LightState.GREEN);
-                eastLight.setCurrentState(TrafficLights.LightState.RED);
-                westLight.setCurrentState(TrafficLights.LightState.RED);
-            } else {
-                // Switch to red for north-south, green for east-west
-                northLight.setCurrentState(TrafficLights.LightState.RED);
-                southLight.setCurrentState(TrafficLights.LightState.RED);
-                eastLight.setCurrentState(TrafficLights.LightState.GREEN);
-                westLight.setCurrentState(TrafficLights.LightState.GREEN);
-            }
+        // Only switch if not already green and not same as current green
+        if (!congestedDirection.equals(currentGreenDirection)) {
+            switchToDirection(congestedDirection);
         } else {
-            // Switch east-west group
-            TrafficLights northLight = trafficLights.get("north");
-            TrafficLights southLight = trafficLights.get("south");
-            TrafficLights eastLight = trafficLights.get("east");
-            TrafficLights westLight = trafficLights.get("west");
-            
-            if (eastLight.getCurrentState() == TrafficLights.LightState.RED) {
-                // Switch to green for east-west, red for north-south
-                eastLight.setCurrentState(TrafficLights.LightState.GREEN);
-                westLight.setCurrentState(TrafficLights.LightState.GREEN);
-                northLight.setCurrentState(TrafficLights.LightState.RED);
-                southLight.setCurrentState(TrafficLights.LightState.RED);
-            } else {
-                // Switch to red for east-west, green for north-south
-                eastLight.setCurrentState(TrafficLights.LightState.RED);
-                westLight.setCurrentState(TrafficLights.LightState.RED);
-                northLight.setCurrentState(TrafficLights.LightState.GREEN);
-                southLight.setCurrentState(TrafficLights.LightState.GREEN);
+            // Extend green time
+            trafficLights.get(currentGreenDirection).extendGreenTime(1000);
+        }
+    }
+
+    private void switchToDirection(String direction) {
+        // Set all lights to red first
+        trafficLights.values().forEach(light -> 
+            light.setCurrentState(TrafficLights.LightState.RED));
+        
+        // Set new direction to green
+        trafficLights.get(direction).setCurrentState(TrafficLights.LightState.GREEN);
+        currentGreenDirection = direction;
+        
+        updateVehiclesAtStopLineAfterLightChange(direction);
+    }
+    
+    private void updateVehiclesAtStopLineAfterLightChange(String direction) {
+        Lane lane = roads.getLane(direction);
+        if (lane == null) return;
+        
+        for (Vehicle v : lane.getVehicles()) {
+            if (!v.isInIntersection() && isAtStopLine(v, direction)) {
+                v.setMoving(true);
             }
+        }
+    }
+    
+    private boolean isAtStopLine(Vehicle v, String dir) {
+        int x = v.getX();
+        int y = v.getY();
+        int centerX = roads.getCenterX();
+        int centerY = roads.getCenterY();
+        int laneWidth = roads.getLaneWidth();
+        
+        switch (dir) {
+            case "north":
+                return y >= centerY - laneWidth - 15 && y <= centerY - laneWidth + 5 &&
+                       x >= centerX - laneWidth/2 - 10 && x <= centerX - laneWidth/2 + 10;
+            case "south":
+                return y <= centerY + laneWidth + 15 && y >= centerY + laneWidth - 5 &&
+                       x >= centerX + laneWidth/2 - 10 && x <= centerX + laneWidth/2 + 10;
+            case "east":
+                return x <= centerX + laneWidth + 15 && x >= centerX + laneWidth - 5 &&
+                       y >= centerY - laneWidth/2 - 10 && y <= centerY - laneWidth/2 + 10;
+            case "west":
+                return x >= centerX - laneWidth - 15 && x <= centerX - laneWidth + 5 &&
+                       y >= centerY + laneWidth/2 - 10 && y <= centerY + laneWidth/2 + 10;
+            default: return false;
         }
     }
     
@@ -156,7 +190,6 @@ public class TrafficController {
         return new HashMap<>(trafficLights);
     }
     
-    // Inner class for priority queue
     private static class LanePriority {
         String direction;
         double congestionLevel;

@@ -4,6 +4,8 @@ import javafx.scene.paint.Color;
 
 
 public class Vehicle {
+    private static int nextId = 1; // Static field for unique IDs
+    private final int id; // Unique ID for each vehicle
     private final Color color;
     private final String startPosition;
     private String direction;
@@ -22,6 +24,7 @@ public class Vehicle {
     private String currentGrid; // Track which grid the vehicle is currently occupying
 
     public Vehicle(String startPosition, String direction, int velocity, int safeDistance, int length, Roads roads) {
+        this.id = nextId++; // Assign unique ID
         this.direction = direction;
         this.directionNow = "straight";
         this.velocity = velocity;
@@ -50,39 +53,28 @@ public class Vehicle {
         initializePosition();
     }
     
-    private void initializePosition() {
-        // Set initial coordinates based on starting position - spawn at lane entrance
-        switch (startPosition.toLowerCase()) {
-            case "north":
-                // Coming from north, spawn at top, center of right lane (going south)
-                this.x = 285; // Center of right lane (going south)
-                this.y = 100; // Top of screen
-                this.directionNow = "south"; // Moving south
-                break;
-            case "south":
-                // Coming from south, spawn at bottom, center of right lane (going north)
-                this.x = 315; // Center of right lane (going north)
-                this.y = 400; // Bottom of screen
-                this.directionNow = "north"; // Moving north
-                break;
-            case "east":
-                // Coming from east, spawn at right, center of right lane (going west)
-                this.x = 450; // Right side
-                this.y = 235; // Center of right lane (going west)
-                this.directionNow = "west"; // Moving west
-                break;
-            case "west":
-                // Coming from west, spawn at left, center of right lane (going east)
-                this.x = 150; // Left side
-                this.y = 265; // Center of right lane (going east)
-                this.directionNow = "east"; // Moving east
-                break;
-            default:
-                this.x = 300;
-                this.y = 250; // Default to center
-                this.directionNow = "south";
-        }
+    // Vehicle.java
+private void initializePosition() {
+    // Set directionNow based on startPosition
+    switch (startPosition.toLowerCase()) {
+        case "north": directionNow = "south"; break;
+        case "south": directionNow = "north"; break;
+        case "east": directionNow = "west"; break;
+        case "west": directionNow = "east"; break;
+        default: directionNow = "south";
     }
+
+    // Use lane spawn points
+    Lane lane = roads.getLane(startPosition);
+    if (lane != null) {
+        this.x = lane.getSpawnX();
+        this.y = lane.getSpawnY();
+    } else {
+        // Fallback
+        this.x = 300;
+        this.y = 250;
+    }
+}
     
     // Getters
     public Color getColor() {
@@ -210,38 +202,133 @@ public class Vehicle {
         return false;
     }
     
+    private boolean isFirstAtStopLine() {
+        Lane lane = roads.getLane(startPosition);
+        if (lane == null) return true;
+        Vehicle first = null;
+        int bestDist = Integer.MAX_VALUE;
+        for (Vehicle v : lane.getVehicles()) {
+            int dist;
+            switch (startPosition.toLowerCase()) {
+                case "north":
+                    dist = Math.abs(v.getY() - (roads.getCenterY() - roads.getLaneWidth()));
+                    break;
+                case "south":
+                    dist = Math.abs(v.getY() - (roads.getCenterY() + roads.getLaneWidth()));
+                    break;
+                case "east":
+                    dist = Math.abs(v.getX() - (roads.getCenterX() + roads.getLaneWidth()));
+                    break;
+                case "west":
+                    dist = Math.abs(v.getX() - (roads.getCenterX() - roads.getLaneWidth()));
+                    break;
+                default:
+                    dist = Integer.MAX_VALUE;
+            }
+            if (first == null || dist < bestDist) {
+                first = v;
+                bestDist = dist;
+            }
+        }
+        return first == this;
+    }
+
     private boolean isEnteringIntersection() {
         int centerX = roads.getCenterX();
         int centerY = roads.getCenterY();
         int laneWidth = roads.getLaneWidth();
-        
-        // Check if vehicle is about to enter intersection based on direction
+
+        // Check if the light is green for this direction
+        if (!roads.isGreenLight(startPosition)) {
+            return false;
+        }
+
+        // Only allow the first vehicle at the stop line to enter
+        if (!isFirstAtStopLine()) {
+            return false;
+        }
+
+        // Predict the grid the vehicle will enter
+        int nextX = x, nextY = y;
         switch (directionNow.toLowerCase()) {
             case "south":
-                return y >= centerY - laneWidth && y < centerY - laneWidth + 5;
+                nextY = y + velocity;
+                break;
             case "north":
-                return y <= centerY + laneWidth && y > centerY + laneWidth - 5;
+                nextY = y - velocity;
+                break;
             case "west":
-                return x <= centerX + laneWidth && x > centerX + laneWidth - 5;
+                nextX = x - velocity;
+                break;
             case "east":
-                return x >= centerX - laneWidth && x < centerX - laneWidth + 5;
+                nextX = x + velocity;
+                break;
         }
-        return false;
+        String nextGrid = getGridAtPosition(nextX, nextY);
+
+        // Check if vehicle is about to enter intersection based on direction and grid is free
+        boolean aboutToEnter = false;
+        switch (directionNow.toLowerCase()) {
+            case "south":
+                aboutToEnter = y >= centerY - laneWidth && y < centerY - laneWidth + 5;
+                break;
+            case "north":
+                aboutToEnter = y <= centerY + laneWidth && y > centerY + laneWidth - 5;
+                break;
+            case "west":
+                aboutToEnter = x <= centerX + laneWidth && x > centerX + laneWidth - 5;
+                break;
+            case "east":
+                aboutToEnter = x >= centerX - laneWidth && x < centerX - laneWidth + 5;
+                break;
+        }
+        // Only allow entering if the grid is not occupied
+        return aboutToEnter && (nextGrid == null || !roads.isGridOccupied(nextGrid));
     }
     
     private void moveInIntersection() {
         if (direction.equals("straight")) {
-            // Just move straight through
-            moveForward();
-            // Check if exited intersection
-            if (hasExitedIntersection()) {
-                isInIntersection = false;
-                releaseCurrentGrid(); // Release grid when exiting intersection
+            // Predict next position
+            int nextX = x, nextY = y;
+            switch (directionNow.toLowerCase()) {
+                case "north":
+                    nextY = y - velocity;
+                    break;
+                case "south":
+                    nextY = y + velocity;
+                    break;
+                case "east":
+                    nextX = x + velocity;
+                    break;
+                case "west":
+                    nextX = x - velocity;
+                    break;
             }
+            String nextGrid = getGridAtPosition(nextX, nextY);
+            // Allow move if next grid is free or is already occupied by this vehicle
+            if (nextGrid == null || !roads.isGridOccupied(nextGrid) || nextGrid.equals(currentGrid) || hasHighestPriorityForGrid(nextGrid, null)) {
+                moveForward();
+                // Occupy the grid at the new position if any
+                String gridAtCurrentPosition = getGridAtPosition(x, y);
+                if (gridAtCurrentPosition != null && !gridAtCurrentPosition.equals(currentGrid)) {
+                    releaseCurrentGrid(); // Release previous grid if any
+                    occupyGrid(gridAtCurrentPosition);
+                }
+                // Check if exited intersection
+                if (hasExitedIntersection()) {
+                    isInIntersection = false;
+                    releaseCurrentGrid(); // Release grid when exiting intersection
+                }
+            }
+            // else: do not move, wait for grid to be free
         } else if (direction.equals("turn left")) {
             moveLeftTurn();
         } else if (direction.equals("turn right")) {
             moveRightTurn();
+        }
+        if (hasExitedIntersection()) {
+            isInIntersection = false;
+            releaseCurrentGrid(); // Release grid when exiting intersection 
         }
     }
     
@@ -564,6 +651,11 @@ public class Vehicle {
         return turnStep;
     }
     
+    // Add getter for ID
+    public int getId() {
+        return id;
+    }
+
     // Grid occupancy management methods
     private boolean canMoveToGrid(String targetGrid) {
         if (targetGrid == null) return true; // Can move to non-grid positions
@@ -607,5 +699,38 @@ public class Vehicle {
         System.out.println("SW Grid: " + (roads.isGridOccupied("SW") ? "OCCUPIED" : "FREE"));
         System.out.println("SE Grid: " + (roads.isGridOccupied("SE") ? "OCCUPIED" : "FREE"));
         System.out.println("==============================");
+    }
+    
+    // Priority order: north > east > south > west
+    private static int getDirectionPriority(String direction) {
+        switch (direction.toLowerCase()) {
+            case "north": return 1;
+            case "east": return 2;
+            case "south": return 3;
+            case "west": return 4;
+            default: return 5;
+        }
+    }
+    
+    // This method should be called with the list of all vehicles
+    private boolean hasHighestPriorityForGrid(String targetGrid, java.util.List<Vehicle> allVehicles) {
+        // 1. If any vehicle (other than self) is already in the intersection and occupies any grid, they have priority
+        for (Vehicle v : allVehicles) {
+            if (v != this && v.isInIntersection() && v.currentGrid != null) {
+                // If the other vehicle is already in any intersection grid, it has priority
+                return false;
+            }
+        }
+        // 2. If no vehicle is in the intersection, use direction priority as tiebreaker
+        int myPriority = getDirectionPriority(this.startPosition);
+        for (Vehicle v : allVehicles) {
+            if (v != this && targetGrid.equals(v.currentGrid)) {
+                int otherPriority = getDirectionPriority(v.startPosition);
+                if (otherPriority < myPriority) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

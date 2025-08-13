@@ -33,6 +33,7 @@ public class TrafficSimulation extends Application {
         gc = canvas.getGraphicsContext2D();
         roads = new Roads();
         trafficController = new TrafficController(roads);
+        roads.setTrafficController(trafficController);
         allVehicles = new ArrayList<>();
         random = new Random();
         
@@ -129,7 +130,7 @@ public class TrafficSimulation extends Application {
     
     private void update() {
         // Update traffic controller
-        trafficController.update();
+        trafficController.update(allVehicles);
         
         // Update vehicles
         List<Vehicle> vehiclesToRemove = new ArrayList<>();
@@ -228,7 +229,7 @@ public class TrafficSimulation extends Application {
     private boolean checkCollision(Vehicle vehicle) {
         // Enhanced collision detection using bounding boxes and safe distances
         for (Vehicle other : allVehicles) {
-            if (other != vehicle) {
+            if (!vehicle.equals(other)) { // Use equals instead of != for object comparison
                 // Calculate comprehensive collision using bounding boxes
                 if (wouldCollideWithVehicle(vehicle, other)) {
                     return true;
@@ -239,64 +240,60 @@ public class TrafficSimulation extends Application {
     }
     
     private boolean wouldCollideWithVehicle(Vehicle vehicle1, Vehicle vehicle2) {
-        // Get vehicle dimensions and positions
-        int x1 = vehicle1.getX();
-        int y1 = vehicle1.getY();
-        int length1 = vehicle1.getLength();
-        int safeDistance1 = vehicle1.getSafeDistance();
-        
-        int x2 = vehicle2.getX();
-        int y2 = vehicle2.getY();
-        int length2 = vehicle2.getLength();
-        int safeDistance2 = vehicle2.getSafeDistance();
-        
-        // Calculate vehicle width (assume standard width)
-        int vehicleWidth = 15;
-        
-        // If both vehicles are in intersection, rely primarily on grid system
+        // If both vehicles are in the intersection, do a simple overlap check
         if (vehicle1.isInIntersection() && vehicle2.isInIntersection()) {
-            // Only check for very close collisions - let the grid system handle coordination
-            double centerDistance = Math.sqrt(
-                Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2)
-            );
-            // Much more lenient in intersection - only prevent actual collisions
-            return centerDistance < (vehicleWidth + 5); // Just vehicle width plus small buffer
+            int dx = Math.abs(vehicle1.getX() - vehicle2.getX());
+            int dy = Math.abs(vehicle1.getY() - vehicle2.getY());
+            double distance = Math.sqrt(dx * dx + dy * dy);
+            // Use a small buffer (e.g., half vehicle width) to prevent visual overlap
+            return distance < (15 / 2.0);
         }
-        
-        // For vehicles not in intersection, use normal collision detection
-        // Calculate bounding boxes with reduced safe distance buffer
-        int buffer = Math.min(safeDistance1, safeDistance2) / 2; // Reduced buffer
-        
-        // Vehicle 1 bounding box (with reduced safety buffer)
-        int v1Left = x1 - vehicleWidth/2 - buffer;
-        int v1Right = x1 + vehicleWidth/2 + buffer;
-        int v1Top = y1 - length1/2 - buffer;
-        int v1Bottom = y1 + length1/2 + buffer;
-        
-        // Vehicle 2 bounding box (actual size)
-        int v2Left = x2 - vehicleWidth/2;
-        int v2Right = x2 + vehicleWidth/2;
-        int v2Top = y2 - length2/2;
-        int v2Bottom = y2 + length2/2;
-        
-        // Check for bounding box overlap
-        boolean xOverlap = v1Left < v2Right && v1Right > v2Left;
-        boolean yOverlap = v1Top < v2Bottom && v1Bottom > v2Top;
-        
-        if (xOverlap && yOverlap) {
-            // For same-lane vehicles, check if one is in front of the other
-            if (vehicle1.getStartPosition().equals(vehicle2.getStartPosition())) {
-                return isInFront(vehicle1, vehicle2) || isInFront(vehicle2, vehicle1);
+
+        // Check for same-lane collision (not in intersection)
+        if (vehicle1.getStartPosition().equals(vehicle2.getStartPosition())) {
+            // Check if vehicle2 is in front of vehicle1
+            if (isInFront(vehicle1, vehicle2)) {
+                int dx = Math.abs(vehicle1.getX() - vehicle2.getX());
+                int dy = Math.abs(vehicle1.getY() - vehicle2.getY());
+                double distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Predict if the NEXT move will violate the safe distance.
+                // This prevents the car from getting one step too close.
+                if (distance - vehicle1.getVelocity() < vehicle1.getSafeDistance()) {
+                    return true;
+                }
             }
+            return false; // No collision if not in front or far enough away
+        }
+
+        // For vehicles in different lanes approaching the intersection, use bounding box check
+        if (!vehicle1.isInIntersection() && !vehicle2.isInIntersection()) {
+            int x1 = vehicle1.getX();
+            int y1 = vehicle1.getY();
+            int length1 = vehicle1.getLength();
             
-            // For different lanes, check if they're at intersection entry points
-            if (!vehicle1.isInIntersection() && !vehicle2.isInIntersection()) {
-                // Both approaching intersection from different directions
-                return areApproachingIntersection(vehicle1) && areApproachingIntersection(vehicle2);
+            int x2 = vehicle2.getX();
+            int y2 = vehicle2.getY();
+            int length2 = vehicle2.getLength();
+            
+            int vehicleWidth = 15;
+            int buffer = 5; // Small buffer for cross-traffic
+
+            // Bounding boxes
+            int v1Left = x1 - vehicleWidth/2 - buffer;
+            int v1Right = x1 + vehicleWidth/2 + buffer;
+            int v1Top = y1 - length1/2 - buffer;
+            int v1Bottom = y1 + length1/2 + buffer;
+            
+            int v2Left = x2 - vehicleWidth/2;
+            int v2Right = x2 + vehicleWidth/2;
+            int v2Top = y2 - length2/2;
+            int v2Bottom = y2 + length2/2;
+            
+            // Check for bounding box overlap if both are approaching
+            if (areApproachingIntersection(vehicle1) && areApproachingIntersection(vehicle2)) {
+                return v1Left < v2Right && v1Right > v2Left && v1Top < v2Bottom && v1Bottom > v2Top;
             }
-            
-            // Default collision detection
-            return true;
         }
         
         return false;
@@ -387,8 +384,9 @@ public class TrafficSimulation extends Application {
         // Draw vehicles
         drawVehicles();
         
-        // Draw UI info
-        drawUI();
+
+        // Print vehicle info to console
+        printAllVehicleInfo();
     }
     
     private void drawRoads() {
@@ -564,35 +562,60 @@ public class TrafficSimulation extends Application {
         }
     }
     
-    private void drawVehicles() {
-        for (Vehicle vehicle : allVehicles) {
-            gc.setFill(vehicle.getColor());
-            gc.fillRect(vehicle.getX() - 8, vehicle.getY() - 8, 16, 16);
-            
-            // Draw direction indicator
-            gc.setFill(Color.BLACK);
-            gc.setFont(Font.font(10));
-            gc.fillText(vehicle.getDirection().substring(0, 1).toUpperCase(), 
-                       vehicle.getX() - 3, vehicle.getY() + 3);
+// TrafficSimulation.java
+private void drawVehicles() {
+    for (Vehicle vehicle : allVehicles) {
+        gc.setFill(vehicle.getColor());
+        gc.fillRect(vehicle.getX() - 8, vehicle.getY() - 8, 16, 16);
+        
+        // Draw direction indicator
+        gc.setFill(Color.BLACK);
+        gc.setFont(Font.font(10));
+        
+        String label = "S";
+        if (vehicle.getDirection().equals("turn left")) {
+            label = "L";
+        } else if (vehicle.getDirection().equals("turn right")) {
+            label = "R";
+        }
+
+        // No label for straight
+        
+        if (!label.isEmpty()) {
+            gc.fillText(label, vehicle.getX() - 3, vehicle.getY() + 3);
         }
     }
+}
     
-    private void drawUI() {
-        gc.setFill(Color.BLACK);
-        gc.setFont(Font.font(12));
-        
-        // Instructions
-        gc.fillText("Controls: Arrow keys to spawn vehicles, R for random, ESC to exit", 10, 20);
-        gc.fillText("Vehicles: " + allVehicles.size(), 10, 40);
-        
-        // Congestion levels
-        gc.fillText("Congestion Levels:", 10, 70);
-        for (String direction : new String[]{"north", "south", "east", "west"}) {
-            Lane lane = roads.getLane(direction);
-            if (lane != null) {
-                gc.fillText(direction + ": " + String.format("%.1f%%", 
-                           lane.getCongestionLevel() * 100), 10, 90 + direction.hashCode() % 4 * 20);
-            }
+    private void printAllVehicleInfo() {
+        System.out.println("=== VEHICLE STATUS ===");
+        for (Vehicle v : allVehicles) {
+            System.out.printf(
+                "ID: %d | Vehicle from %s (%s) at (%d,%d) | DirNow: %s | InIntersection: %s | IsMoving: %s | Grid: %s | TurnStep: %d%n",
+                v.getId(),
+                v.getStartPosition(),
+                v.getDirection(),
+                v.getX(),
+                v.getY(),
+                v.getDirectionNow(),
+                v.isInIntersection(),
+                v.isMoving(),
+                getVehicleCurrentGrid(v),
+                v.getTurnStep()
+            );
+        }
+        System.out.println("======================");
+    }
+
+    // Helper to access currentGrid (if no getter, use reflection)
+    private String getVehicleCurrentGrid(Vehicle v) {
+        try {
+            java.lang.reflect.Field f = v.getClass().getDeclaredField("currentGrid");
+            f.setAccessible(true);
+            Object val = f.get(v);
+            return val == null ? "null" : val.toString();
+        } catch (Exception e) {
+            return "?";
         }
     }
     

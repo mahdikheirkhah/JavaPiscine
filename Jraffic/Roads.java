@@ -13,7 +13,7 @@ public class Roads {
     private int centerX = 300;
     private int centerY = 250;
     private int laneWidth = 30;
-    private int roadLength = 150;
+    private int roadLength = 270;
     
     // Intersection grid positions (4 key points for turning)
     private int northWestGridX, northWestGridY;
@@ -31,6 +31,8 @@ public class Roads {
     private static final String NE_GRID = "NE";
     private static final String SW_GRID = "SW";
     private static final String SE_GRID = "SE";
+    
+    private TrafficController trafficController; // Add this field
     
     public Roads() {
         initializeIntersectionGrids();
@@ -175,5 +177,16 @@ public class Roads {
             return SE_GRID;
         }
         return null; // Not at any specific grid
+    }
+    
+    // Add this setter
+    public void setTrafficController(TrafficController controller) {
+        this.trafficController = controller;
+    }
+    
+    // Add this method
+    public boolean isGreenLight(String direction) {
+        if (trafficController == null) return false;
+        return trafficController.canVehiclePass(direction);
     }
 }
