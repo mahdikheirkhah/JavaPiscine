@@ -31,7 +31,7 @@ public class Main {
         
         Cube cube = new Cube(new Point(700, 200), 100);
         cube.draw(image);
-        
-        image.save("Jart/image.png");
+
+        image.save("jrawing/image.png");
     }
 }

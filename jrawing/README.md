@@ -1,4 +1,4 @@
-## Jart
+## Jrawing
 
 ### Instructions
 The purpose of this exercise is to create an image like the example below:
@@ -71,21 +71,28 @@ public class Main {
 - [java.awt](https://www.javatpoint.com/java-awt)
 
 ## How to Compile and Run
-
-### 1. Compile all Java files
+### 1. clone the repository
+```bash
+git clone https://01.gritlab.ax/git/mkheirkh/jrawing
+```
+### 2. change directory
+```bash
+cd jrawing
+```
+### 3. Compile all Java files
 
 ```bash
-javac Jart/*.java
+javac *.java -d build
 ```
 
-### 2. Run the program
+### 4. Run the program
 
 ```bash
-java Jart.Main
+java -cp build jrawing.Main
 ```
 
-### 3. Output
+### 5. Output
 
-- The program will generate an image file named `Jart/image.png` in your project directory.
+- The program will generate an image file named `image.png` in your project directory.
 
-> Make sure you have write permissions to the `Jart` directory so the image can be saved.
+> Make sure you have write permissions to the `jrawing` directory so the image can be saved. 
