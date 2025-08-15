@@ -13,7 +13,7 @@ public class Roads {
     private int centerX = 300;
     private int centerY = 250;
     private int laneWidth = 30;
-    private int roadLength = 270;
+    private int roadLength = 250;
     
     // Intersection grid positions (4 key points for turning)
     private int northWestGridX, northWestGridY;

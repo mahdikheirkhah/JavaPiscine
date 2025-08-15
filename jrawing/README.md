@@ -69,3 +69,23 @@ public class Main {
 ### Notions
 
 - [java.awt](https://www.javatpoint.com/java-awt)
+
+## How to Compile and Run
+
+### 1. Compile all Java files
+
+```bash
+javac Jart/*.java
+```
+
+### 2. Run the program
+
+```bash
+java Jart.Main
+```
+
+### 3. Output
+
+- The program will generate an image file named `Jart/image.png` in your project directory.
+
+> Make sure you have write permissions to the `Jart` directory so the image can be saved.

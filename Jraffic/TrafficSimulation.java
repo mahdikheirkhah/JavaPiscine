@@ -40,7 +40,7 @@ public class TrafficSimulation extends Application {
         // Setup scene
         VBox root = new VBox();
         root.getChildren().add(canvas);
-        Scene scene = new Scene(root, 600, 500);
+        Scene scene = new Scene(root, 600, 600);
         
         // Setup keyboard controls
         setupKeyControls(scene);

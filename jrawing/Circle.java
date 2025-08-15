@@ -1,4 +1,4 @@
-package Jart;
+package jrawing;
 
 import java.awt.Color;
 import java.util.Random;
