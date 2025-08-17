@@ -87,11 +87,11 @@ public class Main {
 ## How to Compile and Run
 ### 1. clone the repository
 ```bash
-git clone https://01.gritlab.ax/git/mkheirkh/jrawing.git
+git clone https://github.com/mahdikheirkhah/JavaPiscine.git
 ```
 ### 2. change directory
 ```bash
-cd jrawing
+cd JavaPiscine/jrawing
 ```
 ### 3. Compile all Java files
 
