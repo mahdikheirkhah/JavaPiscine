@@ -1,4 +1,4 @@
-package jrawing;
+package geometrical_shapes;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;

@@ -64,16 +64,30 @@ public class Main {
     }
 }
 ```
+## Project Structure
 
-
-### Notions
-
-- [java.awt](https://www.javatpoint.com/java-awt)
-
+```
+/jrawing
+├──/geometrical_shapes
+│   ├── Circle.java
+│   ├── Cube.java
+│   ├── Displayable.java
+│   ├── Drawable.java
+│   ├── Image.java
+│   ├── Line.java
+│   ├── Pentagon.java
+│   ├── Point.java
+│   ├── Rectangle.java
+│   └── Triangle.java
+├── Main.java
+├── example.png
+├── image.png
+└── README.md
+```
 ## How to Compile and Run
 ### 1. clone the repository
 ```bash
-git clone https://01.gritlab.ax/git/mkheirkh/jrawing
+git clone https://01.gritlab.ax/git/mkheirkh/jrawing.git
 ```
 ### 2. change directory
 ```bash

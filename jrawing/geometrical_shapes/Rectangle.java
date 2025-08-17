@@ -1,4 +1,4 @@
-package jrawing;
+package geometrical_shapes;
 import java.awt.Color;
 
 public class Rectangle implements Drawable {
@@ -11,22 +11,29 @@ public class Rectangle implements Drawable {
         this.bottomRight = bottomRight;
         this.color = Color.WHITE;
     }
+    public Rectangle(Point topLeft, Point bottomRight, Color color) {
+        this.topLeft = topLeft;
+        this.bottomRight = bottomRight;
+        this.color = color;
+    }
 
     @Override
     public void draw(Displayable displayable) {
+        // Extract coordinates
         int x1 = topLeft.getX();
         int y1 = topLeft.getY();
         int x2 = bottomRight.getX();
         int y2 = bottomRight.getY();
 
-        // Draw four lines to form a rectangle
+        // Comput the other two corners
         Point topRight = new Point(x2, y1);
         Point bottomLeft = new Point(x1, y2);
 
-        new Line(topLeft, topRight).draw(displayable);
-        new Line(topRight, bottomRight).draw(displayable);
-        new Line(bottomRight, bottomLeft).draw(displayable);
-        new Line(bottomLeft, topLeft).draw(displayable);
+        // Draw four sides 
+        new Line(topLeft, topRight, this.color).draw(displayable);
+        new Line(topRight, bottomRight, this.color).draw(displayable);
+        new Line(bottomRight, bottomLeft, this.color).draw(displayable);
+        new Line(bottomLeft, topLeft, this.color).draw(displayable);
     }
 
     @Override

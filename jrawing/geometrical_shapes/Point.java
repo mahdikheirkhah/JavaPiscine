@@ -1,4 +1,4 @@
-package jrawing;
+package geometrical_shapes;
 
 import java.awt.Color;
 import java.util.Random;
@@ -12,6 +12,7 @@ public class Point implements Drawable {
         this.y = y;
         this.color = Color.WHITE;
     }
+
     public static Point random(int maxX, int maxY) {
         Random rand = new Random();
         return new Point(rand.nextInt(maxX), rand.nextInt(maxY));

@@ -1,4 +1,4 @@
-package jrawing;
+package geometrical_shapes;
 import java.awt.Color;
 
 public class Triangle implements Drawable {
@@ -11,13 +11,13 @@ public class Triangle implements Drawable {
         this.p1 = p1;
         this.p2 = p2;
         this.p3 = p3;
-        this.color = Color.WHITE;
+        this.color = Color.GREEN;
     }
     @Override
     public void draw(Displayable displayable){
-        Line L1 = new Line(p1, p2);
-        Line L2 = new Line(p1, p3);
-        Line L3 = new Line(p2, p3);
+        Line L1 = new Line(p1, p2, this.color);
+        Line L2 = new Line(p1, p3, this.color);
+        Line L3 = new Line(p2, p3, this.color);
         L1.draw(displayable);
         L2.draw(displayable);
         L3.draw(displayable);

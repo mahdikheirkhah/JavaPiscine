@@ -1,4 +1,5 @@
-package jrawing;
+package geometrical_shapes;
+
 import java.awt.Color;
 
 public class Line implements Drawable {
@@ -8,7 +9,12 @@ public class Line implements Drawable {
     public Line(Point p1, Point p2){
         this.p1 = p1;
         this.p2 = p2;
-        this.color = Color.WHITE;
+        this.color = Color.RED;
+    }
+    public Line(Point p1, Point p2, Color color) {
+        this.p1 = p1;
+        this.p2 = p2;
+        this.color = color;
     }
     public static Line random(int maxX, int maxY) {
         return new Line(Point.random(maxX, maxY), Point.random(maxX, maxY));
@@ -29,8 +35,10 @@ public class Line implements Drawable {
         int err = dx - dy;
 
         while (true) {
-            displayable.display(x1, y1, color);
+            // Draw current pixel
+            displayable.display(x1, y1, this.color);
 
+            // Stop when end poin is reached
             if (x1 == x2 && y1 == y2) break;
 
             int e2 = 2 * err;
