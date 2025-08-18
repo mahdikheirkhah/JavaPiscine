@@ -1,4 +1,4 @@
-package Quest04.AdventureException;
+
 public class DeadCharacterException extends Exception {
     private Character character;
 

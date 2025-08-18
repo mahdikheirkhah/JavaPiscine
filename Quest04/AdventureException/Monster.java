@@ -1,4 +1,3 @@
-package Quest04.AdventureException;
 public class Monster extends Character {
     public Monster(String name, int maxHealth, Weapon weapon){
         super(name, maxHealth, weapon);
