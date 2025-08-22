@@ -35,3 +35,24 @@ Optionally, you may implement the following bonus features:
 > Note: You are free to choose any library for handling windows, rendering, keyboard, and mouse events.
 
 For more information on Chaikin's algorithm, refer to [this resource](http://graphics.cs.ucdavis.edu/education/CAGDNotes/Chaikins-Algorithm/Chaikins-Algorithm.html). You can also view an example of how the application should work in this [video](https://youtu.be/PbB2eKnA2QI). Remember, the usage of Chaikin's algorithm is mandatory for this implementation.
+
+## How to Compile and Run
+### 1. clone the repository
+```bash
+git clone https://github.com/mahdikheirkhah/JavaPiscine.git
+```
+### 2. change directory
+```bash
+cd JavaPiscine/Jaikin
+```
+### 3. Compile all Java files
+
+```bash
+javac *.java -d build
+```
+
+### 4. Run the program
+
+```bash
+java -cp build Jaikin.Main
+```
